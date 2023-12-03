@@ -18,11 +18,12 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(of = "id")
+@EqualsAndHashCode(of = "usuarioId")
 public class Usuario implements UserDetails {
     @Id
+    @Column(name = "usuario_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long usuarioId;
     @Column(nullable = false, length = 100)
     private String nombre;
     @Column(length = 3)
@@ -36,8 +37,6 @@ public class Usuario implements UserDetails {
     private String username;
     @Column(nullable = false, length = 100)
     private String password;
-    @Column(name = "puntos_acumulados", columnDefinition = "double default 0")
-    private Double puntos;
     @Column(unique = true, nullable = false, length = 8)
     @Pattern(regexp = "\\d{8}")
     private String dni;

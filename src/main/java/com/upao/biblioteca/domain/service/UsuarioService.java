@@ -38,7 +38,6 @@ public class UsuarioService {
                 .edad(usuario.getEdad())
                 .telefono(usuario.getTelefono())
                 .correo(usuario.getCorreo())
-                .puntos(0.0)
                 .dni(usuario.getDni())
                 .rol(Rol.LECTOR)
                 .build();

@@ -21,8 +21,8 @@ public class SpringDocConfigurations {
                                         .scheme("bearer")
                                         .bearerFormat("JWT")))
                 .info(new Info()
-                        .title("Recicla upao API")
-                        .description("API para el proyecto de Recicla upao")
+                        .title("Biblioteca upao API")
+                        .description("API para el proyecto de Biblioteca upao")
                         .contact(new Contact()
                                 .name("Jhoel Maqui")
                                 .email("jmaquis1@upao.edu.pe"))
@@ -31,7 +31,6 @@ public class SpringDocConfigurations {
                                 .url("http://www.apache.org/licenses/LICENSE-2.0.html")));
     }
 
-    @Bean
     public void message(){
         System.out.println("bearer is working");
     }
