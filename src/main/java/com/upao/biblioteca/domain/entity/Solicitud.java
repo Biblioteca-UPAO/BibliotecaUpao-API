@@ -19,4 +19,10 @@ public class Solicitud {
     private Long solicitudId;
     @Column(name = "fecha_solicitada", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP", insertable = false)
     private LocalDateTime fechaSolicitada;
+    @ManyToOne
+    @JoinColumn(name = "libro_id" )
+    private Libro libro;
+    @ManyToOne
+    @JoinColumn(name= "usuario_id")
+    private Usuario usuario;
 }
