@@ -34,23 +34,11 @@ public class Autor {
      * Nombre del autor.
      */
     private String nombre;
-    /**
-     * Nacionalidad del autor.
-     */
-    private String nacionalidad;
-    @Column(length = 1000)
-    /**
-     * Biografía del autor, con una longitud máxima de 1000 caracteres.
-     */
-    private String biografia;
-    /**
-     * Fecha de nacimiento del autor.
-     */
-    @Column(name = "fecha_nacimiento")
-    private LocalDate fechaNacimiento;
-    /**
-     * Lista de libros asociados con el autor.
-     */
-    @OneToMany(mappedBy = "autor")
-    private List<Libro> libro;
+
+    @ManyToMany(mappedBy = "autores")
+    private List<Libro> libros;
+
+    public Autor(String nombre) {
+        this.nombre = nombre;
+    }
 }

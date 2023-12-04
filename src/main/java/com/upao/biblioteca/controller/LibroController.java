@@ -1,11 +1,16 @@
 package com.upao.biblioteca.controller;
 
+import com.upao.biblioteca.domain.dto.libroDto.DatosExistentesLibro;
 import com.upao.biblioteca.domain.dto.libroDto.DatosListadoLibro;
 import com.upao.biblioteca.domain.dto.libroDto.DatosRegistroLibro;
 import com.upao.biblioteca.domain.entity.Autor;
+import com.upao.biblioteca.domain.entity.Editorial;
 import com.upao.biblioteca.domain.entity.Libro;
 import com.upao.biblioteca.domain.service.AutorService;
+import com.upao.biblioteca.domain.service.EditorialService;
 import com.upao.biblioteca.domain.service.LibroService;
+import com.upao.biblioteca.infra.repository.AutorRepository;
+import com.upao.biblioteca.infra.repository.EditorialRepository;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +30,15 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+/**
+ * Controlador REST para operaciones relacionadas con libros.
+ * Proporciona endpoints para listar, crear información de libros.
+ * Utiliza {@link LibroService}, {@link AutorService} y {@link EditorialService} para realizar operaciones de negocio.
+ */
 @RestController
 @RequestMapping("/libro")
 @CrossOrigin("*")
@@ -38,52 +50,119 @@ public class LibroController {
     @Autowired
     private final AutorService autorService;
 
+    @Autowired
+    private final EditorialService editorialService;
+
     public static String uploadDirectory =
             System.getProperty("user.dir") + "/src/main/resources/static/images";
+    private final AutorRepository autorRepository;
+    private final EditorialRepository editorialRepository;
 
-    @GetMapping("catalogo-existente")
+    /**
+     * Lista los libros disponibles en el catálogo.
+     *
+     * @param pageable Configuración de paginación para la lista de libros.
+     * @return Una página de libros con datos reducidos para listados.
+     */
+    @GetMapping("catalogo-general")
     public ResponseEntity<Page<DatosListadoLibro>> listarLibros(@PageableDefault(size = 8) Pageable pageable) {
-       Page<DatosListadoLibro> page = libroService.obtenerLibros(pageable)
-               .map(libro -> new DatosListadoLibro(
-                       libro.getTitulo(),
-                       libro.getEstado(),
-                       libro.getPortada(),
-                       libro.getAutor().getAutorId(),
-                       libro.getAutor().getNombre()
-               ));
-       return ResponseEntity.ok(page);
+        Page<DatosListadoLibro> page = libroService.obtenerLibros(pageable)
+                .map(libro -> new DatosListadoLibro(
+                        libro.getTitulo(),
+                        libro.getEstado(),
+                        libro.getPortada(),
+                        libro.getEdicion(),
+                        libro.getCategoria(),
+                        libro.getResumen(),
+                        libro.getIsbn(),
+                        libro.getFechaPublicacion(),
+                        libro.getCodigoPublico(),
+                        libro.getEditorial().getNombre()
+                ));
+        return ResponseEntity.ok(page);
     }
 
+    @GetMapping("catalogo-existente")
+    public ResponseEntity<List<DatosExistentesLibro>> getRecompensas() {
+        List<Libro> libros = libroService.obtenerLibrosExistentes();
+        return ResponseEntity.ok(
+                libros.stream()
+                        .map(recompensa -> new DatosExistentesLibro(
+                                recompensa.getTitulo(),
+                                recompensa.getEstado(),
+                                recompensa.getPortada(),
+                                recompensa.getCodigoPublico(),
+                                recompensa.getAutores().stream().map(Autor::getNombre).collect(Collectors.toSet())
+                        ))
+                        .collect(Collectors.toList())
+        );
+    }
+    /**
+     * Crea un nuevo libro y lo agrega al catálogo.
+     *
+     * @param datosRegistroLibro DTO con los datos del libro a crear.
+     * @param uriComponentsBuilder Constructor de URI para la respuesta.
+     * @param file Archivo de imagen representando la portada del libro.
+     * @return Una ResponseEntity con la información del libro creado.
+     * @throws IOException Si ocurre un error al guardar la imagen de la portada.
+     * @throws ResponseStatusException Si no se encuentra el autor especificado.
+     */
     @PostMapping("/crear-libro")
     @Transactional
-    public ResponseEntity<DatosRegistroLibro> agregarLibro(@RequestBody @Valid DatosRegistroLibro datosRegistroLibro,
-                                                             UriComponentsBuilder uriComponentsBuilder, @RequestParam("image") MultipartFile file) throws IOException {
-
-        Optional<Autor> autorOpt = autorService.buscarPorNombre(datosRegistroLibro.autorNombre());
-
-        if (!autorOpt.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Autor no encontrado");
-        }
+    public ResponseEntity<DatosRegistroLibro> agregarLibro(@ModelAttribute @Valid DatosRegistroLibro datosRegistroLibro,
+                                                             UriComponentsBuilder uriComponentsBuilder,
+                                                           @RequestParam("image") MultipartFile file) throws IOException {
 
         String originalFilename = file.getOriginalFilename();
         Path fileNameAndPath = Paths.get(uploadDirectory, originalFilename);
         Files.write(fileNameAndPath, file.getBytes());
 
-        Autor autor = autorOpt.get();
-
         Libro nuevoLibro = new Libro();
         nuevoLibro.setTitulo(datosRegistroLibro.titulo());
-        nuevoLibro.setEstado(datosRegistroLibro.estado());
         nuevoLibro.setPortada(originalFilename);
-        nuevoLibro.setAutor(autor);
+        nuevoLibro.setEdicion(datosRegistroLibro.edicion());
+        nuevoLibro.setCategoria(datosRegistroLibro.categoria());
+        nuevoLibro.setResumen(datosRegistroLibro.resumen());
+        nuevoLibro.setIsbn(datosRegistroLibro.isbn());
+        nuevoLibro.setFechaPublicacion(datosRegistroLibro.fechaPublicacion());
+        nuevoLibro.setCodigoPublico(datosRegistroLibro.codigoPublico());
+
+        List<String> nombresAutores = datosRegistroLibro.autorNombres();
+        if (nombresAutores != null) {
+            Set<Autor> autores = nombresAutores.stream()
+                    .map(nombre -> autorRepository.findByNombre(nombre)
+                            .orElseGet(() -> autorRepository.save(new Autor(nombre))))
+                    .collect(Collectors.toSet());
+            nuevoLibro.setAutores(autores);
+        }
+
+        String nombreEditorial = datosRegistroLibro.editorialNombre();
+        if (nombreEditorial != null && !nombreEditorial.isEmpty()) {
+            Editorial editorial = editorialRepository.findByNombre(nombreEditorial)
+                    .orElseGet(() -> {
+                        Editorial nuevaEditorial = new Editorial();
+                        nuevaEditorial.setNombre(nombreEditorial);
+                        return editorialRepository.save(nuevaEditorial);
+                    });
+            nuevoLibro.setEditorial(editorial);
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nombre de editorial es obligatorio");
+        }
 
         Libro libroGuardado = libroService.agregarLibro(nuevoLibro);
+
         URI location = uriComponentsBuilder.path("/libro/{id}").buildAndExpand(libroGuardado.getLibroId()).toUri();
         return ResponseEntity.created(location).body(new DatosRegistroLibro(
                 libroGuardado.getTitulo(),
-                libroGuardado.getEstado(),
                 libroGuardado.getPortada(),
-                libroGuardado.getAutor().getNombre()
+                libroGuardado.getEdicion(),
+                libroGuardado.getCategoria(),
+                libroGuardado.getResumen(),
+                libroGuardado.getIsbn(),
+                libroGuardado.getFechaPublicacion(),
+                libroGuardado.getCodigoPublico(),
+                libroGuardado.getAutores().stream().map(Autor::getNombre).collect(Collectors.toList()),
+                libroGuardado.getEditorial().getNombre()
         ));
     }
 }

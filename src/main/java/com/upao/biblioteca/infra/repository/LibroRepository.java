@@ -9,5 +9,5 @@ import java.util.Optional;
 
 public interface LibroRepository extends JpaRepository<Libro, Long> {
     Page<Libro> findAllByOrderByTituloAsc(Pageable pageable);
-    Optional<Libro> findByTituloAndAutorNombre(String titulo, String autorNombre);
+    Optional<Libro> findByCodigoPublico(String codigoPublico);
 }

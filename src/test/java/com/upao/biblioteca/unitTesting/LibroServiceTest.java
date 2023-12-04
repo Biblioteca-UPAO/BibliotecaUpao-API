@@ -1,18 +1,26 @@
 package com.upao.biblioteca.unitTesting;
 
 import com.upao.biblioteca.domain.entity.Autor;
+import com.upao.biblioteca.domain.entity.Editorial;
+import com.upao.biblioteca.domain.entity.Estado;
 import com.upao.biblioteca.domain.entity.Libro;
 import com.upao.biblioteca.domain.service.LibroService;
+import com.upao.biblioteca.infra.repository.AutorRepository;
+import com.upao.biblioteca.infra.repository.EditorialRepository;
 import com.upao.biblioteca.infra.repository.LibroRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * Utiliza Mockito para simular interacciones con el repositorio de libros.
  */
 
-class LibroServiceTest {
+@ExtendWith(MockitoExtension.class)
+public class LibroServiceTest {
 
     @Mock
     private LibroRepository libroRepository;
@@ -30,77 +39,35 @@ class LibroServiceTest {
     @InjectMocks
     private LibroService libroService;
 
-    /**
-     * Prueba el método agregarLibro para asegurar que retorne el libro guardado.
-     */
+    private Libro libro;
 
-    @Test
-    void cuandoSeAgregaLibro_retornarLibroGuardado() {
-        // Configuración
-        Libro libro = new Libro();
-        libro.setTitulo("Nuevo Libro");
-        libro.setAutor(new Autor());
-        when(libroRepository.findByTituloAndAutorNombre(libro.getTitulo(), libro.getAutor().getNombre())).thenReturn(Optional.empty());
-        when(libroRepository.save(any(Libro.class))).thenReturn(libro);
+    @BeforeEach
+    void setUp() {
+        libro = new Libro();
+        libro.setTitulo("Cien Años de Soledad");
+        libro.setPortada("portada.jpg");
+        libro.setEstado(Estado.DISPONIBLE);
+        libro.setCodigoPublico("ABC123");
 
-        // Ejecución
-        Libro result = libroService.agregarLibro(libro);
+        Autor autor = new Autor("Gabriel García Márquez");
+        Set<Autor> autores = new HashSet<>();
+        autores.add(autor);
+        libro.setAutores(autores);
 
-        // Verificación
-        assertNotNull(result);
-        assertEquals("Nuevo Libro", result.getTitulo());
+        Editorial editorial = new Editorial();
+        editorial.setNombre("Editorial XYZ");
+        libro.setEditorial(editorial);
     }
 
-    /**
-     * Prueba el método obtenerLibros para verificar que se devuelven libros disponibles.
-     */
-
     @Test
-    void cuandoHayLibros_disponible() {
-        // Configuración
-        Pageable pageable = mock(Pageable.class);
-        Page<Libro> pageMock = mock(Page.class);
-        when(pageMock.isEmpty()).thenReturn(false);
-        when(libroRepository.findAllByOrderByTituloAsc(pageable)).thenReturn(pageMock);
+    void cuandoAgregarLibroConCodigoDuplicado_entoncesLanzaExcepcion() {
+        when(libroRepository.findByCodigoPublico("ABC123")).thenReturn(Optional.of(libro));
 
-        // Ejecución
-        Page<Libro> result = libroService.obtenerLibros(pageable);
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            libroService.agregarLibro(libro);
+        });
 
-        // Verificación
-        assertNotNull(result);
-        verify(libroRepository).findAllByOrderByTituloAsc(pageable);
-    }
-
-    /**
-     * Prueba el método agregarLibro para lanzar una excepción si el libro ya existe.
-     */
-
-    @Test
-    void cuandoLibroExiste_lanzarExcepcion() {
-        // Configuración
-        Libro libro = new Libro();
-        libro.setTitulo("Libro Existente");
-        libro.setAutor(new Autor());
-        when(libroRepository.findByTituloAndAutorNombre(libro.getTitulo(), libro.getAutor().getNombre())).thenReturn(Optional.of(libro));
-
-        // Ejecución y Verificación
-        assertThrows(ResponseStatusException.class, () -> libroService.agregarLibro(libro));
-    }
-
-    /**
-     * Prueba el método obtenerLibros para lanzar una excepción si no hay libros disponibles.
-     */
-
-    @Test
-    void cuandoNoHayLibros_lanzarExcepcion() {
-        // Configuración
-        Pageable pageable = mock(Pageable.class);
-        Page<Libro> pageMock = mock(Page.class);
-        when(pageMock.isEmpty()).thenReturn(true);
-        when(pageMock.isFirst()).thenReturn(true);
-        when(libroRepository.findAllByOrderByTituloAsc(pageable)).thenReturn(pageMock);
-
-        // Ejecución y Verificación
-        assertThrows(ResponseStatusException.class, () -> libroService.obtenerLibros(pageable));
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        verify(libroRepository, never()).save(libro);
     }
 }

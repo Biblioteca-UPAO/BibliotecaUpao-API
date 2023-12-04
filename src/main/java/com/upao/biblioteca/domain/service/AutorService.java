@@ -41,18 +41,4 @@ public class AutorService {
         return autorRepository.findByNombre(nombre);
     }
 
-    /**
-     * Guarda o actualiza un autor en la base de datos.
-     *
-     * @param autor El autor a guardar o actualizar.
-     * @return El autor guardado.
-     * @throws ResponseStatusException Si ocurre un error al guardar el autor.
-     */
-    public Autor guardarAutor(Autor autor) {
-        try {
-            return autorRepository.save(autor);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error al guardar el autor", e);
-        }
-    }
 }

@@ -3,10 +3,12 @@ package com.upao.biblioteca.unitTesting;
 import com.upao.biblioteca.domain.entity.Autor;
 import com.upao.biblioteca.domain.service.AutorService;
 import com.upao.biblioteca.infra.repository.AutorRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -23,6 +25,22 @@ public class AutorServiceTest {
     @InjectMocks
     private AutorService autorService;
 
+    @BeforeEach
+    public void setUp() {
+        autorService = new AutorService(autorRepository);
+    }
+
+    @Test
+    public void testBuscarPorNombre() {
+        String nombreBuscado = "Gabriel Garcia Marquez";
+        Autor autorEsperado = new Autor(nombreBuscado);
+        when(autorRepository.findByNombre(nombreBuscado)).thenReturn(Optional.of(autorEsperado));
+
+        Optional<Autor> resultado = autorService.buscarPorNombre(nombreBuscado);
+
+        assertEquals(Optional.of(autorEsperado), resultado, "El autor retornado debe coincidir con el esperado");
+    }
+
     @Test
     //buscarPorNombre
     public void cuandoBuscaPorNombreExistente_retornaAutor() {
@@ -30,9 +48,6 @@ public class AutorServiceTest {
         Autor autor = new Autor();
         autor.setAutorId(1L);
         autor.setNombre("Nombre Autor");
-        autor.setNacionalidad("Nacionalidad");
-        autor.setBiografia("Biografía");
-        autor.setFechaNacimiento(LocalDate.now());
 
         when(autorRepository.findByNombre("Nombre Autor")).thenReturn(Optional.of(autor));
 
@@ -45,31 +60,11 @@ public class AutorServiceTest {
 
     @Test
     public void cuandoBuscaPorNombreInexistente_retornaVacio() {
-
         when(autorRepository.findByNombre("Nombre Inexistente")).thenReturn(Optional.empty());
 
         Optional<Autor> resultado = autorService.buscarPorNombre("Nombre Inexistente");
 
         assertFalse(resultado.isPresent());
-
     }
 
-    @Test
-    //guardarAutor
-    public void cuandoGuardaAutor_retornaAutorGuardado() {
-
-        Autor autor = new Autor();
-        autor.setAutorId(1L);
-        autor.setNombre("Nombre Autor");
-        autor.setNacionalidad("Nacionalidad");
-        autor.setBiografia("Biografía");
-        autor.setFechaNacimiento(LocalDate.now());
-
-        when(autorRepository.save(any(Autor.class))).thenReturn(autor);
-
-        Autor resultado = autorService.guardarAutor(autor);
-
-        assertNotNull(resultado);
-        assertEquals("Nombre Autor", resultado.getNombre());
-    }
 }
