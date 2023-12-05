@@ -19,6 +19,12 @@ public class Solicitud {
     private Long solicitudId;
     @Column(name = "fecha_solicitada", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP", insertable = false)
     private LocalDateTime fechaSolicitada;
+    @Column(name = "fecha_recojo")
+    private LocalDateTime fechaRecojo;
+    @Column(name = "fecha_max_devolucion")
+    private LocalDateTime fechaMaxDevolucion;
+    @Column(name = "fecha_devolucion")
+    private LocalDateTime fechaDevolucion;
     @ManyToOne
     @JoinColumn(name = "libro_id" )
     private Libro libro;

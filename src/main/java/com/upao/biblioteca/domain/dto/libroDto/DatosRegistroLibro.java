@@ -15,7 +15,7 @@ import java.util.List;
  * Utilizado para encapsular los datos necesarios para el registro de un nuevo libro.
  * Incluye campos como título, estado, portada, edicion, categoria, resumen, etc y nombre del autor y del editorial.
  */
-public record DatosRegistroLibro(@NotNull String titulo, String portada, String edicion,
+public record DatosRegistroLibro(String titulo, String portada, String edicion,
                                  Categoria categoria, String resumen, String isbn, @DateTimeFormat(pattern = "yyyy/MM/dd") LocalDate fechaPublicacion,
                                  String codigoPublico, List<String>autorNombres, String editorialNombre) implements Serializable {
 }

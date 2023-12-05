@@ -30,8 +30,10 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -102,20 +104,21 @@ public class LibroController {
      *
      * @param datosRegistroLibro DTO con los datos del libro a crear.
      * @param uriComponentsBuilder Constructor de URI para la respuesta.
-     * @param file Archivo de imagen representando la portada del libro.
      * @return Una ResponseEntity con la información del libro creado.
      * @throws IOException Si ocurre un error al guardar la imagen de la portada.
      * @throws ResponseStatusException Si no se encuentra el autor especificado.
      */
     @PostMapping("/crear-libro")
     @Transactional
-    public ResponseEntity<DatosRegistroLibro> agregarLibro(@ModelAttribute @Valid DatosRegistroLibro datosRegistroLibro,
-                                                             UriComponentsBuilder uriComponentsBuilder,
-                                                           @RequestParam("image") MultipartFile file) throws IOException {
+    public ResponseEntity<DatosRegistroLibro> agregarLibro(@RequestBody @Valid DatosRegistroLibro datosRegistroLibro,
+                                                             UriComponentsBuilder uriComponentsBuilder) throws IOException {
 
-        String originalFilename = file.getOriginalFilename();
+        String base64Image = datosRegistroLibro.portada();
+        byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+
+        String originalFilename = UUID.randomUUID().toString();
         Path fileNameAndPath = Paths.get(uploadDirectory, originalFilename);
-        Files.write(fileNameAndPath, file.getBytes());
+        Files.write(fileNameAndPath, imageBytes);
 
         Libro nuevoLibro = new Libro();
         nuevoLibro.setTitulo(datosRegistroLibro.titulo());
@@ -134,6 +137,8 @@ public class LibroController {
                             .orElseGet(() -> autorRepository.save(new Autor(nombre))))
                     .collect(Collectors.toSet());
             nuevoLibro.setAutores(autores);
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El Autor es obligatorio");
         }
 
         String nombreEditorial = datosRegistroLibro.editorialNombre();
@@ -154,7 +159,7 @@ public class LibroController {
         URI location = uriComponentsBuilder.path("/libro/{id}").buildAndExpand(libroGuardado.getLibroId()).toUri();
         return ResponseEntity.created(location).body(new DatosRegistroLibro(
                 libroGuardado.getTitulo(),
-                libroGuardado.getPortada(),
+                datosRegistroLibro.portada(),
                 libroGuardado.getEdicion(),
                 libroGuardado.getCategoria(),
                 libroGuardado.getResumen(),

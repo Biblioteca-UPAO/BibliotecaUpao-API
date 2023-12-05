@@ -45,7 +45,7 @@ public class Libro {
      * Imagen de la portada del libro.
      * Se almacena como un objeto Lob (Large Object) debido a su potencial tamaño grande.
      */
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 100000)
     @Lob
     private String portada;
     private String edicion;
@@ -80,6 +80,18 @@ public class Libro {
         return autores.stream()
                 .map(autor -> autor.getNombre())
                 .collect(Collectors.toSet());
+    }
+
+    public void reservarLibro() {
+        this.estado = Estado.RESERVADO;
+    }
+
+    public void marcarNoDisponible() {
+        this.estado = Estado.NODISPONIBLE;
+    }
+
+    public void marcarDisponible(){
+        this.estado = Estado.DISPONIBLE;
     }
 
 }

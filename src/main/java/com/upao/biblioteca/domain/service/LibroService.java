@@ -58,9 +58,6 @@ public class LibroService {
         }
 
         Set<Autor> autores = new HashSet<>();
-        if (autores == null || autores.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El Autor es obligatorio");
-        }
         for (String nombreAutor : libro.getNombresAutores()) {
             Autor autor = autorRepository.findByNombre(nombreAutor)
                     .orElseGet(() -> new Autor(nombreAutor));
